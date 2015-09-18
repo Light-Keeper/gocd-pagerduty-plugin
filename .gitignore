@@ -1,7 +1,5 @@
 # Created by https://www.gitignore.io/api/ava,maven,intellij
 
-#!! ERROR: ava is undefined. Use list command to see defined gitignore types !!#
-
 ### Maven ###
 target/
 pom.xml.tag
