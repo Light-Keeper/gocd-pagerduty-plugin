@@ -18,6 +18,7 @@ import com.typesafe.config.ConfigFactory;
 
 import java.io.File;
 import java.net.InetAddress;
+import java.net.URI;
 import java.net.UnknownHostException;
 import java.util.*;
 
@@ -95,7 +96,13 @@ public class GoNotificationPlugin implements GoPlugin {
 
             // Create an incident when matching pipelines fail
             if (pipelinesToMonitor.contains(message.getPipelineName()) && statusesToAlertOn.contains(message.getStageState())) {
-                Trigger trigger = new Trigger.Builder(String.format("%s build %s on %s", message.fullyQualifiedJobName(), message.getStageState(), hostname)).build();
+                URI goURI = new URI("https", hostname, "/go/pipelines/" + message.getPipelineName() + "/" + message.getPipelineCounter() + "/" + message.getStageName() + "/" + message.getStageCounter());
+                String goUrl = goURI.toURL().toString();
+
+                Trigger trigger = new Trigger.Builder(String.format("Failed Build: %s build %s on %s", message.fullyQualifiedJobName(), message.getStageState(), hostname))
+                        .client("GoCD")
+                        .clientUrl(goUrl)
+                        .build();
                 NotifyResult result = pagerDuty.notify(trigger);
                 currentIncidentKeys.put(pipelineStage, result.incidentKey());
             }
