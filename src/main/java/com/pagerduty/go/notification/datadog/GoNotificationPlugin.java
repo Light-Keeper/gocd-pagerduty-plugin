@@ -15,6 +15,7 @@ import com.thoughtworks.go.plugin.api.request.GoPluginApiRequest;
 import com.thoughtworks.go.plugin.api.response.GoPluginApiResponse;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
+import com.typesafe.config.ConfigValue;
 
 import java.io.File;
 import java.net.InetAddress;
@@ -28,16 +29,15 @@ public class GoNotificationPlugin implements GoPlugin {
 
     private static final String CONF_FILENAME = "pagerduty-notify.conf";
 
-    private static PagerDuty pagerDuty;
     private static String hostname;
-    private static List<String> pipelinesToMonitor;
+    private static Map<String, String> pipelineApiKeys = new HashMap<>();
     private static List<String> statusesToAlertOn;
 
-    private static Map<String, String> currentIncidentKeys = null;
+    private static Map<String, String> currentIncidentKeys = new HashMap<>();
 
     public GoNotificationPlugin() {
-        Config defaultConfig = null;
-        Config config = null;
+        Config defaultConfig;
+        Config config;
 
         defaultConfig = ConfigFactory.load(getClass().getClassLoader());    // This loads the resources/reference.conf file
 
@@ -50,11 +50,13 @@ public class GoNotificationPlugin implements GoPlugin {
             config = ConfigFactory.parseFile(configFile).withFallback(defaultConfig);
         }
 
-        String apiKey = config.getString("pagerduty.api_key");
-        pipelinesToMonitor = config.getStringList("pagerduty.pipelines");
-        statusesToAlertOn = config.getStringList("pagerduty.statuses_to_alert");
+        // Load API key list pipeline_name=api_key
+        Config apiKeyConfig = config.getConfig("pagerduty.pipeline_api_keys");
+        for (Map.Entry<String, ConfigValue> entry : apiKeyConfig.entrySet()) {
+            pipelineApiKeys.put(entry.getKey(), entry.getValue().unwrapped().toString());
+        }
 
-        pagerDuty = PagerDuty.create(apiKey);
+        statusesToAlertOn = config.getStringList("pagerduty.statuses_to_alert");
 
         try {
             hostname = InetAddress.getLocalHost().getHostName();
@@ -94,8 +96,13 @@ public class GoNotificationPlugin implements GoPlugin {
 
             String pipelineStage = message.getPipelineName() + "-" + message.getStageName();
 
+            PagerDuty pd;
+
             // Create an incident when matching pipelines fail
-            if (pipelinesToMonitor.contains(message.getPipelineName()) && statusesToAlertOn.contains(message.getStageState())) {
+            if (pipelineApiKeys.containsKey(message.getPipelineName()) && statusesToAlertOn.contains(message.getStageState())) {
+
+                pd = PagerDuty.create(pipelineApiKeys.get(message.getPipelineName()));
+
                 URI goURI = new URI("https", hostname, "/go/pipelines/" + message.getPipelineName() + "/" + message.getPipelineCounter() + "/" + message.getStageName() + "/" + message.getStageCounter());
                 String goUrl = goURI.toURL().toString();
 
@@ -103,16 +110,18 @@ public class GoNotificationPlugin implements GoPlugin {
                         .client("GoCD")
                         .clientUrl(goUrl)
                         .build();
-                NotifyResult result = pagerDuty.notify(trigger);
+                NotifyResult result = pd.notify(trigger);
                 currentIncidentKeys.put(pipelineStage, result.incidentKey());
             }
 
             // If that pipeline + stage passes, clear the incident
             if (currentIncidentKeys.containsKey(pipelineStage) && "Passed".equals(message.getStageResult())) {
+                pd = PagerDuty.create(pipelineApiKeys.get(message.getPipelineName()));
+
                 Resolution resolution = new Resolution.Builder(pipelineStage)
                         .withDescription(String.format("%s build %s on %s", message.fullyQualifiedJobName(), message.getStageState(), hostname))
                         .build();
-                pagerDuty.notify(resolution);
+                pd.notify(resolution);
                 currentIncidentKeys.remove(pipelineStage);
             }
 

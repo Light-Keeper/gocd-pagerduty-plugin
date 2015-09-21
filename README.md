@@ -18,11 +18,12 @@ It uses the [HOCON](https://github.com/typesafehub/config/blob/master/HOCON.md) 
 Example file contents:
 
     pagerduty {
-      # PagerDuty API key
-      api_key =
-      # Names of pipelines to alert on if there is a failure
-      pipelines = []
-      # Statuses to alert on
+      # Pipeline Name = Service API Key to alert on
+      pipeline_api_keys {
+        "Pipeline_Name" = "SERVICEAPIKEY"
+        "Pipeline_2" = "SERVICE2APIKEY"
+      }
+      # Statuses to alert on (one of Building, Failing, Passed, Failed, Cancelled, Unknown)
       statuses_to_alert = [Failed]
     }
 
