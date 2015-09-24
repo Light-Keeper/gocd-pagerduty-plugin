@@ -1,4 +1,4 @@
-package com.pagerduty.go.notification.datadog;
+package com.pagerduty.go.notification.pagerduty;
 
 import com.google.gson.*;
 

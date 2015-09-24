@@ -1,0 +1,25 @@
+{ "pipeline": {
+  "name": "Pipeline_2",
+  "counter": "1",
+  "group": "Pipeline_2_Group",
+  "stage": {
+    "name": "Compile",
+    "counter": "1",
+    "approval-type": "success",
+    "approved-by": "changes",
+    "state": "Failed",
+    "result": "Failed",
+    "create-time": "2015-09-01T10:00:00.000Z",
+    "last-transition-time": "2015-09-01T10:05:00.000Z",
+    "jobs": [
+      {
+        "name": "compile",
+        "schedule-time": "2015-09-01T10:00:00.000Z",
+        "complete-time": "2015-09-01T10:05:00.000Z",
+        "state": "Failed",
+        "result": "Failed",
+        "agent-uuid": "uuid"
+      }
+    ]
+  }
+}}

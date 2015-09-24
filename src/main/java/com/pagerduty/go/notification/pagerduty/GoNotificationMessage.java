@@ -1,4 +1,4 @@
-package com.pagerduty.go.notification.datadog;
+package com.pagerduty.go.notification.pagerduty;
 
 
 import com.google.gson.annotations.SerializedName;
@@ -10,7 +10,6 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class GoNotificationMessage {
-    private Logger LOGGER = Logger.getLoggerFor(GoNotificationMessage.class);
 
     static class Pipeline {
         @SerializedName("name")
